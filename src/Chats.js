@@ -150,6 +150,7 @@ const Chats = ({ navigation }) => {
                                     roomID: item.id,
                                     listingOwnerID: item.listingOwnerID,
                                     listingID: item.listingID,
+                                    creatorFirstName: item.roomName,
                                 });
                             }}
                         >

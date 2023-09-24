@@ -64,6 +64,7 @@ const Login = () => {
                 <View style={styles.inputContainer}>
                     <View style={styles.inputBox}>
                         <TextInput
+                            testID="emailInput"
                             style={styles.textInput}
                             placeholder='Email'
                             onChangeText={(email) => setEmail(email)}
@@ -73,6 +74,7 @@ const Login = () => {
                     </View>
                     <View style={styles.inputBox}>
                         <TextInput
+                            testID="passwordInput"
                             style={styles.textInput}
                             placeholder='Password'
                             onChangeText={(password) => setPassword(password)}
@@ -95,6 +97,7 @@ const Login = () => {
                     </View>
                 </View>
                 <TouchableOpacity
+                    testID="loginButton"
                     onPress={() => loginUser(email, password)}
                     style={styles.button}
                 >

@@ -25,7 +25,7 @@ const Chatting = ({ route, navigation }) => {
         console.log('roomID:', roomID);
         console.log('listingID:', listingID);
         console.log('createdBy:', createdBy);
-        console.log('creatorFirstName:', creatorFirstName);
+        console.log('creatorFirstNameadsfasdfaf:', creatorFirstName);
         console.log('completedBy:', completedBy);
         console.log('listingDetails:', listingDetails);
         const timer = setTimeout(() => {
@@ -261,7 +261,7 @@ const Chatting = ({ route, navigation }) => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerText}>
-                    Chatting with {isSender ? creatorFirstName : currentUser.displayName || 'Unknown'}
+                    Chatting with {creatorFirstName}
                 </Text>
                 {renderCancelButton()}
             </View>

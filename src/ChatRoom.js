@@ -1,190 +1,93 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
 import { firebase } from '../config';
-import { useFocusEffect } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/FontAwesome';
 
-const Chats = ({ navigation }) => {
-    // State to hold chat rooms data
-    const [chatRooms, setChatRooms] = useState([{ id: 'placeholder', roomName: 'Loading...' }]);
+// Function to create a new chat room in Firestore
+const createChatRoom = async (participants, roomName, listingOwnerID, listingID) => {
+    console.log('Creating chat room with participants:', participants);
 
-    // State to hold the current user's ID
-    const [currentUserID, setCurrentUserID] = useState(null);
+    // Add a new chat room document to the 'chatRooms' collection
+    const chatRoomRef = await firebase.firestore().collection('chatRooms').add({
+        participants,
+        roomName,
+        listingOwnerID,
+        listingID,
+        createdAt: new Date(),
+    });
 
-    // useEffect to fetch and update chat rooms
-    useFocusEffect(
-        React.useCallback(() => {
-            // Subscribe to changes in the user's authentication state
-            const unsubscribeAuth = firebase.auth().onAuthStateChanged(user => {
-                if (user) {
-                    setCurrentUserID(user.uid);
-                }
-            });
+    console.log('Chat room created with ID:', chatRoomRef.id);
 
-            // Subscribe to changes in chat rooms data
-            const unsubscribeChatRooms = firebase.firestore().collection('chatRooms')
-                .where('participants', 'array-contains', currentUserID)
-                .onSnapshot((snapshot) => {
-                    const chatRoomData = [];
-                    snapshot.forEach(async (doc) => {
-                        const chatRoom = { id: doc.id, ...doc.data(), messages: [], unreadMessages: 0 };
+    // Return the ID of the created chat room
+    return chatRoomRef.id;
+};
 
-                        // Fetch all messages for the chat room
-                        const messagesSnapshot = await firebase.firestore()
-                            .collection('chatRooms')
-                            .doc(chatRoom.id)
-                            .collection('messages')
-                            .orderBy('timestamp', 'desc')
-                            .get();
+const ChatRoom = ({ route, navigation }) => {
+    const userId = firebase.auth().currentUser?.uid;
+    const { otherUser, listingID, createdBy, creatorFirstName } = route.params;
+    console.log('Received creatorFirstName:', creatorFirstName);
+    const [chatRoomID, setChatRoomID] = useState(null);
 
-                        const messages = [];
-                        let latestMessage = null; // Store the latest message
-
-                        messagesSnapshot.forEach((messageDoc) => {
-                            const message = messageDoc.data();
-                            messages.push(message);
-
-                            if (!latestMessage || message.timestamp > latestMessage.timestamp) {
-                                latestMessage = message;
-                            }
-                        });
-
-                        chatRoom.messages = messages;
-
-                        // Calculate the unreadMessages count
-                        chatRoom.unreadMessages = messages.reduce((count, message) => {
-                            if (!message.isRead && message.receiver.id === currentUserID) {
-                                return count + 1;
-                            }
-                            return count;
-                        }, 0);
-
-                        // Assign the latest message as the lastMessage
-                        chatRoom.lastMessage = latestMessage;
-
-                        chatRoomData.push(chatRoom);
-                    });
-                    setChatRooms(chatRoomData);
-                });
-
-            return () => {
-                unsubscribeChatRooms();
-            };
-        }, [currentUserID])
-    );
-
-    // Ref for the FlatList component
-    const flatListRef = useRef(null);
-
-    // Function to mark messages as read
-    const markMessagesAsRead = async (roomID, messageID) => {
-        if (!messageID) {
-            console.log('Invalid message ID');
-            return;
-        }
-
-        // Reference to the message document
-        const messageRef = firebase.firestore()
-            .collection('chatRooms')
-            .doc(roomID)
-            .collection('messages')
-            .doc(messageID);
-
-        try {
-            const messageDoc = await messageRef.get();
-
-            if (messageDoc.exists) {
-                console.log('Message exists. Updating read status.');
-                // Perform the update operation here
-                await messageRef.update({ isRead: true });
-
-                // Update the unreadMessages count for the sender
-                const senderID = messageDoc.data().sender.id;
-
-                setChatRooms(prevChatRooms => {
-                    const updatedChatRooms = prevChatRooms.map(chatRoom => {
-                        if (chatRoom.id === roomID) {
-                            if (chatRoom.lastMessage.sender.id === senderID) {
-                                chatRoom.unreadMessages = 0;
-                            } else if (chatRoom.lastMessage.receiver.id === currentUserID) {
-                                chatRoom.unreadMessages = chatRoom.unreadMessages - 1;
-                            }
-                        }
-                        return chatRoom;
-                    });
-                    return updatedChatRooms;
-                });
-            } else {
-                console.log(`Message with ID ${messageID} does not exist.`);
-                // Handle the case where the message doesn't exist
+    useEffect(() => {
+        const handleStartChat = async () => {
+            if (!userId) {
+                console.log('User ID is not available.');
+                return;
             }
-        } catch (error) {
-            console.error('Error updating message:', error);
-        }
-    };
+
+            console.log('userId:', userId);
+            console.log('Navigating to Chatting screen with listingID:', listingID);
+
+            // Fetch the current user's data from Firestore
+            const userSnapshot = await firebase.firestore().collection('users').doc(userId).get();
+            const user = userSnapshot.data();
+
+            console.log('Fetched user:', user);
+
+            if (!user || !otherUser || !otherUser.uid) {
+                console.log('Invalid user data.');
+                return;
+            }
+
+            const participants = [userId, otherUser.uid];
+            const roomName = `${creatorFirstName || 'Other User'}`;
+            const listingOwnerID = createdBy; // Set listingOwnerID based on createdBy
+            console.log('Participants array:', participants);
+
+            // Create a new chat room and get the ID
+            const newChatRoomID = await createChatRoom(participants, roomName, listingOwnerID, listingID, creatorFirstName);
+            console.log('test yes:', creatorFirstName);
+            setChatRoomID(newChatRoomID);
+
+            // Navigate to the Chatting screen and pass relevant data
+            navigation.navigate('Chatting', {
+                roomID: newChatRoomID,
+                listingID: listingID,
+                createdBy: createdBy,
+                creatorFirstName: creatorFirstName,
+            });
+        };
+
+        handleStartChat();
+    }, [userId, otherUser, listingID, createdBy, creatorFirstName, navigation]);
 
     return (
         <ImageBackground
-            source={require('../assets/background.png')}
+            source={require('../assets/background.png')} 
             style={styles.imageBackground}
         >
             <View style={styles.container}>
-                <Text style={styles.title}>Chat Rooms</Text>
-                <FlatList
-                    ref={flatListRef}
-                    data={chatRooms}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[
-                                styles.chatRoomItem,
-                                item.unreadMessages > 0 && styles.unreadChatRoomItem, // Apply styles for unread chat rooms
-                            ]}
-                            onPress={() => {
-                                const lastMessage = item.lastMessage;
-                                if (lastMessage) { // Check if there's a last message
-                                    markMessagesAsRead(item.id, lastMessage.id); // Pass lastMessage.id instead of item.lastMessage.id
-                                }
-                                navigation.navigate('Chatting', {
-                                    roomID: item.id,
-                                    listingOwnerID: item.listingOwnerID,
-                                    listingID: item.listingID,
-                                });
-                            }}
-                        >
-                            <View style={styles.chatRoomContent}>
-                                <Text style={styles.chatRoomName}>{item.roomName}</Text>
-                                {item.lastMessage && (
-                                    <View style={styles.lastMessageContainer}>
-                                        <Text style={styles.lastMessageText}>
-                                            {item.lastMessage.sender.id === currentUserID
-                                                ? 'You:'
-                                                : `${item.lastMessage.sender.name || 'Unknown'}:`}{' '}
-                                            {item.lastMessage.text}
-                                        </Text>
-                                        <Text style={styles.lastMessageTime}>
-                                            {item.lastMessage.timestamp.toDate().toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                            {item.unreadMessages > 0 && (
-                                <View style={styles.unreadBadge}>
-                                    <Text style={styles.unreadText}>{item.unreadMessages}</Text>
-                                    <Icon
-                                        name="circle"
-                                        size={12}
-                                        color="red"
-                                        style={styles.unreadIcon}
-                                    />
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    )}
-                />
+                <Text style={styles.title}>Start a Chat</Text>
+                <Text style={styles.description}>Chat with {otherUser.displayName}</Text>
+                {chatRoomID ? (
+                    <TouchableOpacity
+                        style={styles.chatButton}
+                        disabled={!chatRoomID}
+                    >
+                        <Text style={styles.chatButtonText}>Go to Chat</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <Text style={styles.loadingText}>Creating chat room...</Text>
+                )}
             </View>
         </ImageBackground>
     );
@@ -193,52 +96,39 @@ const Chats = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
         padding: 20,
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    description: {
+        fontSize: 18,
         marginBottom: 20,
     },
-    chatRoomItem: {
-        backgroundColor: '#F3F3F3',
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#D3D3D3',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    chatButton: {
+        backgroundColor: '#026efd',
+        borderRadius: 50,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
     },
-    chatRoomContent: {
-        flex: 1,
-    },
-    chatRoomName: {
-        fontSize: 16,
-    },
-    lastMessageContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 5,
-    },
-    lastMessageText: {
-        fontSize: 14,
-        color: 'gray',
-        flex: 1,
-    },
-    lastMessageTime: {
-        fontSize: 14,
-        color: 'gray',
-    },
-    unreadText: {
-        color: 'white',
+    chatButtonText: {
+        fontSize: 18,
         fontWeight: 'bold',
+        color: 'white',
+    },
+    loadingText: {
+        fontSize: 18,
+        marginTop: 20,
     },
     imageBackground: {
         flex: 1,
         resizeMode: 'cover',
+        justifyContent: 'center',
     },
 });
 
-export default Chats;
+export default ChatRoom;
