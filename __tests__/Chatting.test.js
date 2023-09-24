@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import Chatting from '../Chatting'; // Adjust the import path as needed
+import Chatting from '../src/Chatting'; 
 
 // Mock the firebase module
 jest.mock('firebase', () => ({
@@ -48,5 +48,4 @@ describe('Chatting Component', () => {
     render(<Chatting route={route} navigation={navigation} />);
   });
 
-  // Add more test cases here as needed
 });

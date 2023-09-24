@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import Dashboard from '../src/Dashboard';
-import firebase from 'firebase/app'; // Import only the necessary Firebase modules
+import firebase from 'firebase/app';
 
 // Import the test Firebase configuration
 import firebaseConfig from './firebaseConfig.test';
@@ -30,8 +30,6 @@ describe('Dashboard Component', () => {
     // Render the Dashboard component
     const { getByText } = render(<Dashboard />);
 
-    // You can add assertions here to check if certain elements are present in the rendered component
-    // For example, you can check if a specific text is present in the component.
     expect(getByText('Hello')).toBeTruthy();
   });
 });

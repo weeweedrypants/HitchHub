@@ -38,14 +38,11 @@ describe('NewListing Component', () => {
   it('should render without errors', () => {
     const { getByText, getByPlaceholderText } = render(<NewListing />);
 
-    // Test that the component renders without errors
     expect(getByText('Create Listing')).toBeTruthy();
 
-    // Example: Test interaction with input field
     const pickUpLocationInput = getByPlaceholderText('Pick-up Location');
     fireEvent.changeText(pickUpLocationInput, 'Test Pick-up Location');
     expect(pickUpLocationInput.props.value).toBe('Test Pick-up Location');
 
-    // You can add more test cases for interactions and behaviors as needed
   });
 });

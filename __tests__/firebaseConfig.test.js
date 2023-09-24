@@ -1,5 +1,3 @@
-// firebaseConfig.test.js
-
 const firebaseConfig = {
     apiKey: "AIzaSyALrZyTdYXUsrzMPINvUYiWByH37U-GM0k",
     authDomain: "hitchhub-28a45.firebaseapp.com",
