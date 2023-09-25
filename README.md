@@ -50,6 +50,7 @@ npx jest
 
 ## Issues
 
-If there is an issue with the latest commit file, please use the initial commit file to run the code. Thank you.
+If there is an issue with the latest commit file as I have experienced, please use the initial commit file to run the code. You can download the latest commited files to copy and paste (SRC, __tests__, __mocks__, app.js) into the inital commited file that you have downloaded. Afterwards perform npm install react-native-vector-icons --save.
+Thank you.
 
 
