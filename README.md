@@ -8,6 +8,7 @@ HitchHub is a mobile application built using React Native, aimed to revolutioniz
 
 - [Installation](#installation)
 - [Testing](#testing)
+- [Issues](#Issues)
 
 ## Installation
 
@@ -46,3 +47,9 @@ npx expo start
 Run the test suite using:
 
 npx jest
+
+## Issues
+
+If there is an issue with the latest commit file, please use the initial commit file to run the code. Thank you.
+
+
